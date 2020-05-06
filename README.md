@@ -7,3 +7,5 @@ on the AWS EC2 platform. I develop several sites in my free time and this tool g
 
 ## Dependencies
 This module is only depedent on the core functionality of the watchdog module.
+
+## Target Completion Date: 5.15.2020
