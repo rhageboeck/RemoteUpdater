@@ -66,6 +66,8 @@ class Updater(object):
     
     def writeData(self):
         with open(self.DATA_FILE,"w") as dataFile:
+            if json.load(dataFile)[sys.platform]:
+                print("Data Exists Would you like to replace or abort?")
             dataFile.write(",".join([self.REMOTE_USERNAME,
                                     self.REMOTE_ADDRESS,
                                     self.IDENTITY.upper(),
