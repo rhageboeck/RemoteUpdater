@@ -15,8 +15,8 @@ Dependencies: watchdog
 import sys
 import json
 import subprocess
+import time
 from os import path
-from time import sleep
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
@@ -141,37 +141,18 @@ class Updater(object):
                                 self.IDENTITY_PATH,
                                 self.REMOTE_DIRECTORY,
                                 self.LOCAL_DIRECTORY)
-        event_handler.SAFE_MODE = True
+        # event_handler._safeMode()
         observer.schedule(event_handler, self.LOCAL_DIRECTORY, recursive = True)
         observer.start()
         print("Updater is Running")
 
         try:
             while True:
-                sleep(5)
+                time.sleep(5)
         except KeyboardInterrupt:
             observer.stop()
             print("\nUpdate has stopped.")
         observer.join()
-
-# class Listener():
-#     def __init__(self, path):
-#         self.LOCAL_PATH = path
-#         self.observer = Observer()
-    
-#     def listen(self):
-#         event_handler = Handler()
-#         self.observer.schedule(event_handler, self.LOCAL_PATH, recursive = True)
-#         self.observer.start()
-#         print("Updater is Running")
-
-#         try:
-#             while True:
-#                 sleep(5)
-#         except KeyboardInterrupt:
-#             self.observer.stop()
-#             print("\nUpdate has stopped.")
-#         self.observer.join()
 
 class Handler(FileSystemEventHandler):
     REMOTE_USERNAME = ''
@@ -180,6 +161,7 @@ class Handler(FileSystemEventHandler):
     REMOTE_PATH = ''
     LOCAL_PATH = ''
     SAFE_MODE = False
+    TIME = 0
 
     def __init__(self, rUsername, rUser, iCert, rDir, lDir):
         Handler.REMOTE_USERNAME = rUsername
@@ -192,7 +174,7 @@ class Handler(FileSystemEventHandler):
     def on_any_event(event):
         if event.is_directory:
             return None
-        elif event.event_type == 'created' or event.event_type == 'modified':
+        elif Handler.shouldContinue() and (event.event_type == 'created' or event.event_type == 'modified'):
             file = event.src_path.replace(Handler.LOCAL_PATH,'')
             #print("File Created %s" % file)
             if Handler.SAFE_MODE:
@@ -207,8 +189,17 @@ class Handler(FileSystemEventHandler):
                     "@".join([Handler.REMOTE_USERNAME, Handler.REMOTE_HOST]) +":"+ Handler.REMOTE_PATH + file]))
 
     @staticmethod
-    def safeMode():
+    def _safeMode():
         Handler.SAFE_MODE = True
+
+    @staticmethod
+    def shouldContinue():
+        currentTime = time.time()
+        if abs(Handler.TIME - currentTime) > 1.25:
+            Handler.TIME = currentTime
+            return True
+        else:
+            return False
 
 if __name__ == "__main__":
     if processArguements(sys.argv):
