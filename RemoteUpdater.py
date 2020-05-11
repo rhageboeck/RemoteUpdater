@@ -22,9 +22,22 @@ from watchdog.events import FileSystemEventHandler
 
 LOCAL_PATH_DATA = {}
 
-REMOTE_USERNAME = "ubuntu"
-REMOTE_HOSTNAME = "robhageboeck.com"
-REMOTE_PATH = "/var/www/robhageboeck/"
+# REMOTE_USERNAME = "ubuntu"
+# REMOTE_HOSTNAME = "robhageboeck.com"
+# REMOTE_PATH = "/var/www/robhageboeck/"
+
+def processArguements(args):
+    if "-v" in args:
+        print(Updater.PROJECT_NAME + ": Version " + Updater.VERSION)
+        return False
+    elif "-h" in args:
+        print("Help Documentation:",Updater.PROJECT_NAME)
+        print("Usage:","python",path.basename(__file__),"<OPTIONS>")
+        print("%-10s%s"%("-v",Updater.PROJECT_NAME+" VERSION"))
+        print("%-10s%s"%("-h",Updater.PROJECT_NAME+" HELP"))
+        print()
+        return False
+    return True
 
 class Updater(object):
     # Metadata
@@ -47,6 +60,8 @@ class Updater(object):
                 self.setup()
             else:
                 print("Aborting Setup.")
+                exit()
+        self.beginListening()
     
     def setup(self):
         """Setup and write supporting data for later use.
@@ -116,39 +131,47 @@ class Updater(object):
         return str
 
     def checkPath(self, path):
-        return path if path[-1] == "/" or path[-1] == "\\" else path + "/"
-
-def processArguements(args):
-    if "-v" in args:
-        print(Updater.PROJECT_NAME + ": Version " + Updater.VERSION)
-        return False
-    elif "-h" in args:
-        print("Help Documentation:",Updater.PROJECT_NAME)
-        print("Usage:","python",path.basename(__file__),"<OPTIONS>")
-        print("%-10s%s"%("-v",Updater.PROJECT_NAME+" VERSION"))
-        print("%-10s%s"%("-h",Updater.PROJECT_NAME+" HELP"))
-        print()
-        return False
-    return True
-
-class Listener():
-    def __init__(self, path):
-        self.LOCAL_PATH = path
-        self.observer = Observer()
+        return path if path[-1] == "/" or path[-1] == "\\" else path + "\\" if sys.platform == "win32" else "/"
     
-    def listen(self):
-        event_handler = Handler()
-        self.observer.schedule(event_handler, self.LOCAL_PATH, recursive = True)
-        self.observer.start()
+    def beginListening(self):
+        observer = Observer()
+        
+        event_handler = Handler(self.REMOTE_USERNAME,
+                                self.REMOTE_ADDRESS,
+                                self.IDENTITY_PATH,
+                                self.REMOTE_DIRECTORY,
+                                self.LOCAL_DIRECTORY)
+        event_handler.SAFE_MODE = True
+        observer.schedule(event_handler, self.LOCAL_DIRECTORY, recursive = True)
+        observer.start()
         print("Updater is Running")
 
         try:
             while True:
                 sleep(5)
         except KeyboardInterrupt:
-            self.observer.stop()
+            observer.stop()
             print("\nUpdate has stopped.")
-        self.observer.join()
+        observer.join()
+
+# class Listener():
+#     def __init__(self, path):
+#         self.LOCAL_PATH = path
+#         self.observer = Observer()
+    
+#     def listen(self):
+#         event_handler = Handler()
+#         self.observer.schedule(event_handler, self.LOCAL_PATH, recursive = True)
+#         self.observer.start()
+#         print("Updater is Running")
+
+#         try:
+#             while True:
+#                 sleep(5)
+#         except KeyboardInterrupt:
+#             self.observer.stop()
+#             print("\nUpdate has stopped.")
+#         self.observer.join()
 
 class Handler(FileSystemEventHandler):
     REMOTE_USERNAME = ''
@@ -156,31 +179,37 @@ class Handler(FileSystemEventHandler):
     IDENTITY_PATH = ''
     REMOTE_PATH = ''
     LOCAL_PATH = ''
+    SAFE_MODE = False
 
-    def __init__(self, rUsername, rHost, iCert, rPath, lPath):
+    def __init__(self, rUsername, rUser, iCert, rDir, lDir):
         Handler.REMOTE_USERNAME = rUsername
-        Handler.REMOTE_HOST = rHost
+        Handler.REMOTE_HOST = rUser
         Handler.IDENTITY_PATH = iCert if iCert else ''
-        Handler.REMOTE_PATH = rPath
-        Handler.LOCAL_PATH = lPath
+        Handler.REMOTE_PATH = rDir
+        Handler.LOCAL_PATH = lDir
 
     @staticmethod
     def on_any_event(event):
         if event.is_directory:
             return None
         elif event.event_type == 'created' or event.event_type == 'modified':
-            file = event.src_path.replace(path,'')
+            file = event.src_path.replace(Handler.LOCAL_PATH,'')
             #print("File Created %s" % file)
-            print("Call: "+" ".join(['scp','-i' if Handler.IDENTITY_PATH != '' else '',
+            if Handler.SAFE_MODE:
+                print("Call: "+" ".join(['scp','-i' if Handler.IDENTITY_PATH != '' else '',
                     Handler.IDENTITY_PATH,
                     Handler.LOCAL_PATH + file,
-                    "@".join([Handler.REMOTE_USERNAME, Handler.REMOTE_HOSTNAME]) +":"+ Handler.REMOTE_PATH + file]))
-            subprocess.call((['scp','-i' if Handler.IDENTITY_PATH != '' else '',
+                    "@".join([Handler.REMOTE_USERNAME, Handler.REMOTE_HOST]) +":"+ Handler.REMOTE_PATH + file]))
+            else:
+                subprocess.call((['scp','-i' if Handler.IDENTITY_PATH != '' else '',
                     Handler.IDENTITY_PATH,
                     Handler.LOCAL_PATH + file,
-                    "@".join([Handler.REMOTE_USERNAME, Handler.REMOTE_HOSTNAME]) +":"+ Handler.REMOTE_PATH + file]))
+                    "@".join([Handler.REMOTE_USERNAME, Handler.REMOTE_HOST]) +":"+ Handler.REMOTE_PATH + file]))
+
+    @staticmethod
+    def safeMode():
+        Handler.SAFE_MODE = True
 
 if __name__ == "__main__":
     if processArguements(sys.argv):
         updater = Updater()
-        print(updater.printCurrentData())
