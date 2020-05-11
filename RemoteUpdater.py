@@ -57,8 +57,8 @@ class Updater(object):
         self.REMOTE_ADDRESS = input("Remote Address: ")
         self.IDENTITY = input("Do you have an identity certificate? (Y/N) ")
         self.IDENTITY_PATH = input("Input the full path for the identity file: ") if self.IDENTITY.upper() == 'Y' else None
-        self.REMOTE_DIRECTORY = input("Input the directory path you would like to sync to: ")
-        self.LOCAL_DIRECTORY = input("Enter the local directory path you would like to sync from: ")
+        self.REMOTE_DIRECTORY = checkPath(input("Input the directory path you would like to sync to: "))
+        self.LOCAL_DIRECTORY = checkPath(input("Enter the local directory path you would like to sync from: "))
         self.writeData()
 
     def writeData(self):
@@ -114,6 +114,10 @@ class Updater(object):
         str += "%-16s | %-40s\n" % ("Remote Path", self.REMOTE_DIRECTORY)
         str += "%-16s | %-40s\n" % ("Local Path", self.LOCAL_DIRECTORY)
         return str
+
+    def checkPath(self, path):
+        return path if path[-1] == "/" or path[-1] == "\\" else path + "/"
+
 def processArguements(args):
     if "-v" in args:
         print(Updater.PROJECT_NAME + ": Version " + Updater.VERSION)
