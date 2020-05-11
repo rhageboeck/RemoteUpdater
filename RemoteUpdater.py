@@ -60,6 +60,8 @@ class Updater(object):
                 self.setup()
             else:
                 print("Aborting Setup.")
+                time.sleep(1)
+                print("Process Terminating.")
                 exit()
         self.beginListening()
     
@@ -151,7 +153,9 @@ class Updater(object):
                 time.sleep(5)
         except KeyboardInterrupt:
             observer.stop()
-            print("\nUpdate has stopped.")
+            print("\nStopping Remote Updater.")
+            time.sleep(1)
+            print("Process Completed.")
         observer.join()
 
 class Handler(FileSystemEventHandler):
