@@ -74,8 +74,8 @@ class Updater(object):
         self.REMOTE_ADDRESS = input("Remote Address: ")
         self.IDENTITY = input("Do you have an identity certificate? (Y/N) ")
         self.IDENTITY_PATH = input("Input the full path for the identity file: ") if self.IDENTITY.upper() == 'Y' else None
-        self.REMOTE_DIRECTORY = checkPath(input("Input the directory path you would like to sync to: "))
-        self.LOCAL_DIRECTORY = checkPath(input("Enter the local directory path you would like to sync from: "))
+        self.REMOTE_DIRECTORY = self.checkPath(input("Input the directory path you would like to sync to: "))
+        self.LOCAL_DIRECTORY = self.checkPath(input("Enter the local directory path you would like to sync from: "))
         self.writeData()
 
     def writeData(self):
